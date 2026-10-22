@@ -7,7 +7,7 @@
     "sync-site": "node scripts/sync-site.mjs",
     "predev": "node scripts/sync-site.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/sync-site.mjs",
+    "prebuild": "node scripts/fetch-site.mjs && node scripts/sync-site.mjs",
     "build": "next build",
     "start": "next start",
     "db:migrate": "node scripts/migrate.mjs",

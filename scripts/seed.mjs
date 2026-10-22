@@ -12,8 +12,9 @@ import vm from 'node:vm';
 import bcrypt from 'bcryptjs';
 import { getDb, migrate } from '../lib/db-core.mjs';
 import { importProjectSlides } from './project-slides.mjs';
+import { siteDir } from './site-dir.mjs';
 
-const ROOT = path.resolve(process.cwd(), '..');
+const ROOT = siteDir();
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 
 const db = await getDb();

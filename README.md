@@ -1,12 +1,13 @@
-# Get Home Realty — Admin panel
+# precon-backend — Get Home Realty admin panel & site server
 
-A separate Next.js app that adds an admin panel (`/admin`), a content API and lead
-capture to the existing static website. The public site's HTML/CSS/JS stays at the
-repository root and keeps its design. This app serves those files unchanged and fills
-in content from the database.
+A Next.js app that adds an admin panel (`/admin`), a content API and lead capture to
+the static website. The website's HTML/CSS/JS lives in its own repository,
+**[precon-website](https://github.com/GetHomeRealty/precon-website)**, and keeps its
+design. This app serves those files unchanged, adds the SEO `<head>` and clean URLs, and
+fills in content from the database.
 
 ```
-/                      → the existing public site (../*.html, ../assets), copied into public/ at build
+/                      → the public site (precon-website's *.html and assets/), copied in at dev/build start
 /admin                 → admin panel (login required)
 /api/admin/*           → admin API (login + CSRF token required)
 /api/auth/*            → login, logout, forgot / reset password
@@ -16,8 +17,13 @@ in content from the database.
 
 ## Local development
 
+Clone both repositories side by side. This app finds the website at `../precon-website`
+(or wherever `SITE_DIR` points):
+
 ```bash
-cd admin-app
+git clone https://github.com/GetHomeRealty/precon-website.git
+git clone https://github.com/GetHomeRealty/precon-backend.git
+cd precon-backend
 npm install
 cp .env.example .env.local      # then set ADMIN_EMAIL and ADMIN_PASSWORD (12+ characters)
 npm run db:seed                  # creates tables, imports today's site content, creates the admin
@@ -25,12 +31,13 @@ npm run dev                      # http://localhost:3000 — site at /, admin at
 ```
 
 - No database install needed: without `DATABASE_URL` the app uses embedded PostgreSQL
-  (PGlite) stored in `admin-app/.data/`. Stop `npm run dev` before running `db:seed`,
+  (PGlite) stored in `.data/`. Stop `npm run dev` before running `db:seed`,
   `db:migrate` or `admin:create`, because only one process can open that database at a time.
 - Without Supabase settings, uploads are saved to `public/uploads/` (development only).
 - Without `RESEND_API_KEY`, password-reset links are printed in the terminal instead of emailed.
-- `npm run dev` copies the public site in first. After editing a root `*.html` or
-  `assets/` file, restart it or run `npm run sync-site`.
+- `npm run dev` copies the website in first. Edit pages in the **precon-website**
+  repository (never the copies in `site-pages/` or `public/assets/`), then restart or run
+  `npm run sync-site`.
 
 ## Production (Vercel + Supabase)
 
@@ -43,8 +50,7 @@ npm run dev                      # http://localhost:3000 — site at /, admin at
    ```bash
    DATABASE_URL=postgresql://… ADMIN_EMAIL=… ADMIN_PASSWORD=… npm run db:seed
    ```
-3. **Vercel**: import the repository and set **Root Directory = `admin-app`** (Next.js is
-   detected automatically). Under **Settings → Environment Variables**, add:
+3. **Vercel**: import the **precon-backend** repository (Next.js is detected automatically). Under **Settings → Environment Variables**, add:
 
    | Variable | Value |
    |---|---|
@@ -54,13 +60,16 @@ npm run dev                      # http://localhost:3000 — site at /, admin at
    | `SUPABASE_BUCKET` | `media` |
    | `SITE_URL` | `https://www.gethomerealty.ca` (used in reset emails) |
    | `RESEND_API_KEY`, `MAIL_FROM` | for password-reset emails |
+   | `SITE_REPO` | clone URL of precon-website. For a private repo include a read-only token: `https://<token>@github.com/GetHomeRealty/precon-website.git` (fine-grained token, *Contents: read-only* on that repo only) |
+   | `SITE_BRANCH` | optional, defaults to `main` |
 
-   Leave "Include files outside the root directory" on (the default). The build copies
-   `../*.html` and `../assets` into the app.
+   The build (`prebuild`) clones the website into `precon-website/` and copies it in.
+   A website change goes live with the next deploy of this app: redeploy in Vercel, or add
+   a Vercel *Deploy Hook* and call it from a GitHub Action on the website repository.
 4. Point the domain at Vercel. The public URLs (`/index.html`, `/hyderabad.html`, …) stay the same.
 
-> **Never upload `admin-app/` to a static host.** If the site is ever deployed again as
-> plain files (cPanel, Netlify drop, etc.), upload only the root `*.html` and `assets/`.
+> **Never upload this repository to a static host.** If the site is ever deployed again as
+> plain files (cPanel, Netlify drop, etc.), upload only precon-website's `*.html` and `assets/`.
 > Those still work alone: they show their built-in content, but forms can't save leads
 > without this app.
 
